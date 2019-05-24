@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">PL02App</string>
+    <string name="title_activity_login_register">LoginRegisterActivity</string>
+    <string name="login_tab_text">Log In</string>
+    <string name="register_tab_text">Register</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_all_recipes">All recipes</string>
+    <string name="menu_upload_recipe">Upload recipes</string>
+    <string name="menu_other">Other</string>
+
+    <string name="menu_account">Account</string>
+    <string name="menu_logout">Log out</string>
+</resources>
