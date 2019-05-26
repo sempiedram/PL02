@@ -53,7 +53,7 @@ def recipe_info(recipe_id):
 
 
 def generate_session_token():
-    return uuid.uuid4()
+    return str(uuid.uuid4())
 
 
 def check_user_exists(username):
@@ -76,10 +76,26 @@ def get_user_password_hash(username):
 
 
 def register_user(username, hashed_password, name, email):
-    postgresql.execute(psycopg2.sql.SQL("CALL users.register_user(%s, %s, %s, %s)"),
+    postgresql.execute(psycopg2.sql.SQL("CALL users.sp_register_user(%s, %s, %s, %s)"),
                        [username, hashed_password, name, email])
 
     postgresql_connection.commit()
+
+
+def save_session_token(username, session_token):
+    postgresql.execute(psycopg2.sql.SQL("CALL users.sp_add_user_session(%s, %s)"),
+                       [username, session_token])
+    postgresql_connection.commit()
+
+
+def logout_session(session_token):
+    postgresql.execute(psycopg2.sql.SQL("CALL users.sp_logout_session(%s)"),
+                       [session_token])
+    postgresql_connection.commit()
+
+
+def check_password(password, hashed_password):
+    return bcrypt.checkpw(password.encode(UTF8), hashed_password.encode(UTF8))
 
 
 class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -169,6 +185,8 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                         self.send_header("Content-Type", "application/json")
                         self.end_headers()
 
+                        # session_token = path_parameters["session_token"][0]
+
                         result = recipes_all()
                         self.wfile.write(result.encode(UTF8))
                         return
@@ -189,11 +207,11 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                         self.send_header("Content-Type", "application/json")
                         self.end_headers()
 
-                        recipe_id = path_parameters["recipe_id"][0]
+                        photo_id = path_parameters["photo_id"][0]
 
-                        print("recipe_id: {}".format(recipe_id))
+                        print("photo_id: {}".format(photo_id))
 
-                        result = recipe_info(recipe_id)
+                        result = recipe_info(photo_id)
                         self.wfile.write(result.encode(UTF8))
                         return
 
@@ -228,12 +246,18 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 if user_exists:
                     db_hashed_password = get_user_password_hash(username)
 
-                    if bcrypt.checkpw(password.encode(UTF8), db_hashed_password.encode(UTF8)):
+                    is_valid_password = check_password(password, db_hashed_password)
+
+                    if is_valid_password:
+                        session_token = generate_session_token()
+
+                        save_session_token(username, session_token)
+
                         self.send_response(200)
                         self.end_headers()
 
                         success_result = {"outcome": "success",
-                                          "session_token": generate_session_token()}
+                                          "session_token": session_token}
 
                         self.write_json(success_result)
                         return
@@ -286,7 +310,22 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.end_headers()
 
-                response = {"success": "user_registered"}
+                response = {"outcome": "success",
+                            "success": "user_registered"}
+
+                self.write_json(response)
+
+                return
+            if path_parts[2] == "logout":
+                session_token = body_parameters.get("session_token")[0]
+
+
+
+                self.send_response(200)
+                self.end_headers()
+
+                response = {"outcome": "success",
+                            "success": "user_registered"}
 
                 self.write_json(response)
 
