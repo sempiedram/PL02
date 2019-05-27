@@ -1,4 +1,3 @@
-
 import http.server
 import pyswip
 import json
@@ -7,6 +6,7 @@ import psycopg2
 import uuid
 import bcrypt
 import psycopg2.sql
+import psycopg2.errors
 
 UTF8 = "utf-8"
 
@@ -43,13 +43,13 @@ def hash_password(password):
     return bcrypt.hashpw(password.encode(UTF8), bcrypt.gensalt()).decode(UTF8)
 
 
-def JSON_encode(thing):
+def json_encode(thing):
     return json.dumps(thing, cls=PrologJSONEncoder)
 
 
 def recipe_info(recipe_id):
     result = next(prolog.query("recipe_info(\"{}\", RecipeInfo)".format(recipe_id)))
-    return JSON_encode(result)
+    return json_encode(result)
 
 
 def generate_session_token():
@@ -61,6 +61,7 @@ def check_user_exists(username):
                        [username])
 
     postgresql_connection.commit()
+    # TODO: Rollback on errors!
 
     return postgresql.fetchone()[0]
 
@@ -70,26 +71,36 @@ def get_user_password_hash(username):
     postgresql_connection.commit()
     result = postgresql.fetchone()
 
+    # TODO: Rollback on errors!
+
     if result is None:
         return None
     return result[0]
 
 
 def register_user(username, hashed_password, name, email):
-    postgresql.execute(psycopg2.sql.SQL("CALL users.sp_register_user(%s, %s, %s, %s)"),
-                       [username, hashed_password, name, email])
+    try:
+        postgresql.execute(psycopg2.sql.SQL("CALL users.register_user_sp(%s, %s, %s, %s)"),
+                           [username, hashed_password, name, email])
 
-    postgresql_connection.commit()
+        postgresql_connection.commit()
+    except psycopg2.errors.UniqueViolation as e:
+        postgresql_connection.rollback()
 
 
 def save_session_token(username, session_token):
-    postgresql.execute(psycopg2.sql.SQL("CALL users.sp_add_user_session(%s, %s)"),
-                       [username, session_token])
-    postgresql_connection.commit()
+    try:
+        postgresql.execute(psycopg2.sql.SQL("CALL users.add_user_session_sp(%s, %s)"),
+                           [username, session_token])
+        postgresql_connection.commit()
+    except psycopg2.errors.UniqueViolation as e:
+        print("Should never happen: session token {} already exists in the database.".format(session_token))
+        postgresql_connection.rollback()
+        # assert(False)
 
 
 def logout_session(session_token):
-    postgresql.execute(psycopg2.sql.SQL("CALL users.sp_logout_session(%s)"),
+    postgresql.execute(psycopg2.sql.SQL("CALL users.logout_session_sp(%s)"),
                        [session_token])
     postgresql_connection.commit()
 
@@ -281,7 +292,6 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
                     self.write_json(error_result)
                     return
-                return
             if path_parts[2] == "register":
                 username = body_parameters.get("username")[0]
                 name = body_parameters.get("name")[0]
@@ -306,6 +316,7 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 hashed_password = hash_password(password)
 
                 register_user(username, hashed_password, name, email)
+                # TODO: Return whether this was successful.
 
                 self.send_response(200)
                 self.end_headers()
@@ -319,7 +330,9 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             if path_parts[2] == "logout":
                 session_token = body_parameters.get("session_token")[0]
 
+                logout_session(session_token)
 
+                print("Logout: {}".format(session_token))
 
                 self.send_response(200)
                 self.end_headers()
@@ -340,9 +353,9 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         return
 
     def write_json(self, to_send):
-        self.wfile.write(JSON_encode(to_send).encode(UTF8))
+        self.wfile.write(json_encode(to_send).encode(UTF8))
 
 
-server_address = ("", 5000)
+server_address = ("", 35000)
 http_server = http.server.HTTPServer(server_address, HTTPRequestHandler)
 http_server.serve_forever()
