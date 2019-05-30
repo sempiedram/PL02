@@ -47,7 +47,7 @@ public class RegisterFragment extends Fragment {
 
         String parametersString = URLUtils.composeQueryParameters(parameters);
 
-        new APIRequestTask(progressBar, mViewModel.queryResult).execute("POST", "http://192.168.254.3:35000/users/register", parametersString);
+        new APIRequestTask(progressBar, mViewModel.queryResult).execute("POST", getResources().getString(R.string.api_url) + "/users/register", parametersString);
     }
 
     @Override

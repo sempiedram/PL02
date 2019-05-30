@@ -40,7 +40,8 @@ public class LoginFragment extends Fragment {
 
         String parametersString = URLUtils.composeQueryParameters(parameters);
 
-        new APIRequestTask(progressBar, mViewModel.queryResult).execute("POST", "http://192.168.254.3:35000/users/login", parametersString);
+        new APIRequestTask(progressBar, mViewModel.queryResult).execute("POST",
+                getView().getResources().getString(R.string.api_url) + "/users/login", parametersString);
     }
 
     @Override

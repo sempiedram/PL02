@@ -2,10 +2,7 @@ package com.sempiedram.pl02app;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.view.ViewPager;
-import android.view.View;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.view.MenuItem;
@@ -16,8 +13,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 
-import com.sempiedram.pl02app.dummy.DummyContent;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +20,7 @@ public class MainActivity extends AppCompatActivity
         implements
             NavigationView.OnNavigationItemSelectedListener,
             UploadRecipeFragment.OnFragmentInteractionListener,
-            RecipePreviewFragment.OnListFragmentInteractionListener,
+            RecipesListFragment.OnListFragmentInteractionListener,
             AccountInfoFragment.OnFragmentInteractionListener {
 
     ViewPager viewPager;
@@ -129,7 +124,7 @@ public class MainActivity extends AppCompatActivity
 
         String parametersString = URLUtils.composeQueryParameters(parameters);
 
-        new APIRequestTask(null, null).execute("POST", "http://192.168.254.3:35000/users/logout", parametersString);
+        new APIRequestTask(null, null).execute("POST", getResources().getString(R.string.api_url) + "/users/logout", parametersString);
         finish();
     }
 
@@ -140,7 +135,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onListFragmentInteraction(DummyContent.DummyItem item) {
-        System.out.println("Touched item: " + item.content);
+    public void onListFragmentInteraction(Recipe item) {
+        System.out.println("Touched item: " + item.toString());
+    }
+
+    @Override
+    public String getSessionToken() {
+        return sessionToken;
     }
 }

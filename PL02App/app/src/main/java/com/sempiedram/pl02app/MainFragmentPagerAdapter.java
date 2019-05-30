@@ -17,7 +17,7 @@ public class MainFragmentPagerAdapter extends FragmentPagerAdapter {
     public Fragment getItem(int i) {
         switch(i) {
             case 0:
-                return new RecipePreviewFragment();
+                return new RecipesListFragment();
             case 1:
                 return new UploadRecipeFragment();
             case 3:

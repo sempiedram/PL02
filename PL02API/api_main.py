@@ -23,6 +23,8 @@ postgresql = postgresql_connection.cursor()
 
 class PrologJSONEncoder(json.JSONEncoder):
     def default(self, o):
+        if type(o) == bytes:
+            return o.decode(UTF8)
         return str(o)
 
 
@@ -36,7 +38,8 @@ def parse_request_path(request_path):
 def recipes_all():
     result = list(prolog.query("all_recipes(RecipesIDs)"))[0]
     # all_recipes_ids = [recipe_id.decode(UTF8) for recipe_id in result.get("RecipesIDs")]
-    return json.dumps(result)
+    # return json_encode(result)
+    return result
 
 
 def hash_password(password):
@@ -49,7 +52,7 @@ def json_encode(thing):
 
 def recipe_info(recipe_id):
     result = next(prolog.query("recipe_info(\"{}\", RecipeInfo)".format(recipe_id)))
-    return json_encode(result)
+    return json_encode(result.decode(UTF8))
 
 
 def generate_session_token():
@@ -199,7 +202,9 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                         # session_token = path_parameters["session_token"][0]
 
                         result = recipes_all()
-                        self.wfile.write(result.encode(UTF8))
+                        result["outcome"] = "success";
+                        # self.wfile.write(result.encode(UTF8))
+                        self.write_json(result)
                         return
                     if path_parts[2] == "all_info":
                         self.send_response(200)
