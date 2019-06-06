@@ -128,6 +128,24 @@ public class RecipeDetailFragment extends Fragment {
         new LoadRecipeInfoAndPhotosTask(apiURL).execute();
     }
 
+    public static String reformatStepString(String step) {
+        if(step == null) {
+            return ":)";
+        }
+
+        step = step.trim();
+
+        if(step.equals("")) {
+            return "";
+        }
+
+        if(step.startsWith("b'")) {
+            return step.substring(2, step.length() - 1);
+        }
+
+        return step;
+    }
+
     @Override
     public void onStop() {
         super.onStop();
@@ -204,7 +222,7 @@ public class RecipeDetailFragment extends Fragment {
                     StringBuilder steps = new StringBuilder();
                     for(int i = 0; i < stepsArray.length(); i++) {
                         JSONArray stepJSON = stepsArray.getJSONArray(i);
-                        steps.append(stepJSON.toString()).append("\n");
+                        steps.append(stepJSON.getString(0) + ": " + reformatStepString(stepJSON.getString(1))).append("\n");
                     }
                     recipeStepsView.setText(steps.toString());
 

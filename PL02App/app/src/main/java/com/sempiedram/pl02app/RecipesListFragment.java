@@ -145,6 +145,7 @@ public class RecipesListFragment extends Fragment {
 
     public void reloadRecipes() {
         // Load all recipes' IDs:
+        Snackbar.make(getView(), "Realoading recipes...", 1000).show();
 
         new LoadRecipePreviewsTask(getView().getResources().getString(R.string.api_url), filterEditText.getText().toString()).execute();
     }

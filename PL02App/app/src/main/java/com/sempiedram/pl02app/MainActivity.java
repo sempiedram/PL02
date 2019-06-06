@@ -15,7 +15,6 @@ import android.view.MenuItem;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.sempiedram.pl02app.MainFragmentPagerAdapter.FRAGMENT_ACCOUNT_INFO;
 import static com.sempiedram.pl02app.MainFragmentPagerAdapter.FRAGMENT_ALL_RECIPES;
 import static com.sempiedram.pl02app.MainFragmentPagerAdapter.FRAGMENT_UPLOAD_RECIPE;
 
@@ -102,8 +101,6 @@ public class MainActivity extends AppCompatActivity
             viewPager.setCurrentItem(FRAGMENT_ALL_RECIPES);
         } else if (id == R.id.menu_upload_recipe) {
             viewPager.setCurrentItem(FRAGMENT_UPLOAD_RECIPE);
-        } else if (id == R.id.menu_account) {
-            viewPager.setCurrentItem(FRAGMENT_ACCOUNT_INFO);
         } else if (id == R.id.menu_log_out) {
             logout(username, sessionToken);
         }
