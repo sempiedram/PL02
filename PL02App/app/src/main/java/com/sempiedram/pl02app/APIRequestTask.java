@@ -163,11 +163,11 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
             e.printStackTrace();
         }
 
-        try {
-            if(result == null) {
-                return null;
-            }
+        if(result == null) {
+            return null;
+        }
 
+        try {
             return new JSONObject(result);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -206,10 +206,13 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
         return null;
     }
 
-    public static JSONObject loadAllRecipesIDs(String sessionToken, String apiURL) {
+    public static JSONObject loadAllRecipesIDs(String sessionToken, String apiURL, String filter) {
         String result = null;
         try {
-            URL recipeInfoURL = new URL(apiURL + "/recipes/all");
+            Map<String, String> parameters = new HashMap<>();
+            parameters.put("filter", filter);
+
+            URL recipeInfoURL = new URL(apiURL + "/recipes/all?" + URLUtils.composeQueryParameters(parameters));
 
             HttpURLConnection apiConnection = (HttpURLConnection) recipeInfoURL.openConnection();
             apiConnection.setRequestMethod(APIRequestTask.HTTPMethod.GET.name());
@@ -231,6 +234,10 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
             e.printStackTrace();
         }catch (IOException e) {
             e.printStackTrace();
+        }
+
+        if(result == null) {
+            return null;
         }
 
         try {

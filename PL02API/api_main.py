@@ -36,13 +36,44 @@ def parse_request_path(request_path):
     return path, query
 
 
-def recipes_all():
+def check_filter(filter_specifier, recipe_id):
+    if len(filter_specifier) != 2:
+        return True
+
+    if filter_specifier[0] == "id":
+        if type(recipe_id) == bytes:
+            return recipe_id.decode(UTF8) == filter_specifier[1]
+        return recipe_id == filter_specifier[1]
+
+    if filter_specifier[0] == "ingredient":
+        return len(prolog_query("recipe_ingredient", recipe_id, filter_specifier[1])) != 0
+
+    if filter_specifier[0] == "type":
+        return len(prolog_query("recipe_type", recipe_id, filter_specifier[1])) != 0
+
+    return True
+
+
+def recipes_all(filter_string):
     """
     Returns the ids of all recipes.
     :return: A list with all the ids.
     """
-    result = list(prolog.query("all_recipes(RecipesIDs)"))[0]["RecipesIDs"]
-    return result
+    print("recipes_all: filter: {}".format(filter_string))
+
+    filter_specifiers = [x.strip() for x in filter_string.split(",")]
+    filters = [f.split(":") for f in filter_specifiers]
+
+    all_ids = list(prolog.query("all_recipes(RecipesIDs)"))[0]["RecipesIDs"]
+    print("All ids before filters: {}".format(all_ids))
+
+    for filter_specifier in filters:
+        if len(filter_specifier) == 2:
+            all_ids = list(filter(lambda recipe_id: check_filter(filter_specifier, recipe_id), all_ids))
+
+    print("All ids after filters ({}): {}".format(filter_string, all_ids))
+
+    return all_ids
 
 
 def hash_password(password):
@@ -156,10 +187,13 @@ def curate_prolog_text(text):
     valid_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!.-,;:_? "
     result = ""
     for c in text:
-        if c not in valid_characters:
+        cc = c
+        if type(c) == int:
+            cc = chr(c)
+        if cc not in valid_characters:
             result += "?"
         else:
-            result += c
+            result += cc
     return result
 
 
@@ -266,7 +300,17 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         if path_parts[0] == "":
             if path_parts[1] == "recipes":
                 if path_parts[2] == "all":
-                    handle_recipes_all(self)
+                    filters = ""
+                    try:
+                        filters = path_parameters["filter"]
+                        if len(filters) == 0:
+                            filters = ""
+                        else:
+                            filters = filters[0]
+                    except KeyError:
+                        pass
+
+                    handle_recipes_all(self, filters)
                     return
 
                 if path_parts[2] == "get":
@@ -439,8 +483,8 @@ def handle_photos_new(handler, session_token, photo_data):
     send_success_response(handler, "photo_saved", result)
 
 
-def handle_recipes_all(handler):
-    result = {"recipes_ids": recipes_all()}
+def handle_recipes_all(handler, filters):
+    result = {"recipes_ids": recipes_all(filters)}
     send_success_response(handler, "recipes_all", result)
 
 

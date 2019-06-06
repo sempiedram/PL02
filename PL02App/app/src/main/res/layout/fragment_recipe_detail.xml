@@ -14,25 +14,29 @@
             android:id="@+id/recipeDetailID"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:layout_margin="10dp"
+            android:text="@string/recipe_id" />
 
         <TextView
             android:id="@+id/recipeDetailType"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:layout_margin="10dp"
+            android:text="@string/recipe_type" />
 
         <TextView
             android:id="@+id/recipeDetailIngredients"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:layout_margin="10dp"
+            android:text="@string/recipe_ingredient" />
 
         <TextView
             android:id="@+id/recipeDetailSteps"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:layout_margin="10dp"
+            android:text="@string/recipe_step" />
 
         <ListView
             android:id="@+id/recipeDetailPictures"

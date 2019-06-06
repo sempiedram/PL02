@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,6 +53,7 @@ public class RecipesListFragment extends Fragment {
     String sessionToken;
     String username;
 
+    EditText filterEditText;
     RecyclerView recipesListRecyclerView;
     List<RecipePreview> allRecipesPreviews = new ArrayList<>();
     public MutableLiveData<String> recipesIDsListResponse;
@@ -85,6 +87,7 @@ public class RecipesListFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_recipe_list, container, false);
 
+        filterEditText = view.findViewById(R.id.filter_edit_text);
         recipesListRecyclerView = view.findViewById(R.id.recipes_list);
         recipesListRecyclerView.setLayoutManager(new NpaLinearLayoutManager(getActivity()));
         recipesListRecyclerView.setAdapter(new RecipeRecyclerViewAdapter(allRecipesPreviews, recipeClickedListener));
@@ -143,14 +146,16 @@ public class RecipesListFragment extends Fragment {
     public void reloadRecipes() {
         // Load all recipes' IDs:
 
-        new LoadRecipePreviewsTask(getView().getResources().getString(R.string.api_url)).execute();
+        new LoadRecipePreviewsTask(getView().getResources().getString(R.string.api_url), filterEditText.getText().toString()).execute();
     }
 
     class LoadRecipePreviewsTask extends AsyncTask<String, Void, JSONObject> {
         String apiURL;
+        String filter;
 
-        LoadRecipePreviewsTask(String apiURL) {
+        LoadRecipePreviewsTask(String apiURL, String filter) {
             this.apiURL = apiURL;
+            this.filter = filter;
         }
 
         @Override
@@ -158,7 +163,7 @@ public class RecipesListFragment extends Fragment {
 
         @Override
         protected JSONObject doInBackground(String[] apiRequest) {
-            JSONObject allRecipesResponse = APIRequestTask.loadAllRecipesIDs(sessionToken, apiURL);
+            JSONObject allRecipesResponse = APIRequestTask.loadAllRecipesIDs(sessionToken, apiURL, filter);
 
             if(allRecipesResponse == null) {
                 JSONObject result = new JSONObject();
