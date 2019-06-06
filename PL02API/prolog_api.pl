@@ -8,9 +8,6 @@
 %=============================== Specific recipes ===============================%
 
 %== Cereal bowl ==%
-
-    recipe_name("cereal_bowl", "Cereal Bowl").
-
     recipe_type("cereal_bowl", "quick").
 
     recipe_ingredient("cereal_bowl", "cereal").
@@ -25,9 +22,6 @@
     recipe_step("cereal_bowl", 1, 'Add cereal to the bowl.').
 
 %== Chocolate Drink ==%
-
-    recipe_name("chocolate_drink", "Chocolate Drink").
-
     recipe_type("chocolate_drink", "tasty").
 
     recipe_ingredient("chocolate_drink", "chocolate").
@@ -73,4 +67,4 @@ recipe_info(RecipeID, [RecipeType, RecipeIngredients, RecipeSteps, RecipePhotogr
 	recipe(RecipeID, RecipeType, RecipeIngredients, RecipeSteps, RecipePhotographs).
 
 all_recipes(RecipesIDs) :-
-	findall(RecipeID, recipe_name(RecipeID, _), RecipesIDs).
+	findall(RecipeID, recipe_type(RecipeID, _), RecipesIDs).
