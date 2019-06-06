@@ -1,34 +1,43 @@
 package com.sempiedram.pl02app;
 
-import android.content.Context;
+import android.annotation.SuppressLint;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
 public class MainFragmentPagerAdapter extends FragmentPagerAdapter {
-    Context mContext;
+    private String sessionToken;
+    private String username;
 
-    public MainFragmentPagerAdapter(Context context, FragmentManager fm) {
+    public static final int FRAGMENT_ALL_RECIPES = 0;
+    public static final int FRAGMENT_UPLOAD_RECIPE = 1;
+    public static final int FRAGMENT_ACCOUNT_INFO = 2;
+
+    MainFragmentPagerAdapter(String sessionToken, String username, FragmentManager fm) {
         super(fm);
-        this.mContext = context;
+        this.sessionToken = sessionToken;
+        this.username = username;
     }
 
+    @SuppressLint("Assert")
     @Override
     public Fragment getItem(int i) {
         switch(i) {
-            case 0:
-                return new RecipesListFragment();
-            case 1:
-                return new UploadRecipeFragment();
-            case 3:
-                return new AccountInfoFragment();
+            case FRAGMENT_ALL_RECIPES:
+                return RecipesListFragment.newInstance(sessionToken, username);
+            case FRAGMENT_UPLOAD_RECIPE:
+                return UploadRecipeFragment.newInstance(sessionToken, username);
+            case FRAGMENT_ACCOUNT_INFO:
+                return AccountInfoFragment.newInstance(sessionToken, username);
         }
 
-        return new UploadRecipeFragment(); // TODO: Change
+        System.err.println("Requested fragment at position " + i + " when there is only " + getCount() + ".");
+//        assert(false);
+        return AccountInfoFragment.newInstance(sessionToken, username);
     }
 
     @Override
     public int getCount() {
-        return 4;
+        return 3;
     }
 }

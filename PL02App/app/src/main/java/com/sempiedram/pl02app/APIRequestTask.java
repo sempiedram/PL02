@@ -7,6 +7,7 @@ import android.widget.ProgressBar;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -14,19 +15,39 @@ import java.net.URL;
 
 public class APIRequestTask extends AsyncTask<String, Void, String> {
 
-    private ProgressBar progressIcon;
-    private MutableLiveData<String> resultVariable;
-
+    enum HTTPMethod {
+        POST,
+        GET
+    };
 
     public static final String OUTCOME = "outcome";
     public static final String SUCCESS = "success";
     public static final String ERROR = "error";
-    public static final String ERROR_MESSAGE = "error_message";
+    public static final String ERROR_MESSAGE = "error_msg";
     public static final String SESSION_TOKEN = "session_token";
 
-    APIRequestTask(ProgressBar progressBar, MutableLiveData<String> resultVariable) {
+
+    private ProgressBar progressIcon;
+    private MutableLiveData<String> resultVariable;
+
+    HTTPMethod httpMethod;
+    String sessionToken;
+    String apiURL;
+    String apiBody;
+
+    APIRequestTask(ProgressBar progressBar,
+                   MutableLiveData<String> resultVariable,
+                   HTTPMethod httpMethod,
+                   String sessionToken,
+                   String apiURL,
+                   String apiBody) {
         progressIcon = progressBar;
         this.resultVariable = resultVariable;
+
+        this.httpMethod = httpMethod;
+        this.sessionToken = sessionToken;
+        this.apiURL = apiURL;
+        this.apiBody = apiBody;
     }
 
     @Override
@@ -38,29 +59,47 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
 
     @Override
     protected String doInBackground(String[] apiRequest) {
-        String apiRequestMethod = apiRequest[0];
-        String apiURL = apiRequest[1];
-        String apiBody = apiRequest[2];
 
         String result = "";
 
         try {
             URL loginEndpoint = new URL(apiURL);
             HttpURLConnection apiConnection = (HttpURLConnection) loginEndpoint.openConnection();
-            apiConnection.setRequestMethod(apiRequestMethod);
+            apiConnection.setRequestMethod(httpMethod.name());
+            if(sessionToken != null) {
+                apiConnection.setRequestProperty("Authorization", sessionToken);
+            }
+            apiConnection.setConnectTimeout(5000);
 
-            if(apiRequestMethod.equals("POST")) {
+            if(httpMethod == HTTPMethod.POST) {
                 apiConnection.setDoOutput(true);
                 apiConnection.getOutputStream().write(apiBody.getBytes());
             }
 
-            InputStreamReader sr = new InputStreamReader(apiConnection.getInputStream());
+            InputStream inputStream = null;
+
+            int responseCode = apiConnection.getResponseCode();
+            System.out.println("Response code: " + responseCode);
+
+            switch(responseCode) {
+                case 400:
+                case 401:
+                case 402:
+                case 404:
+                    inputStream = apiConnection.getErrorStream();
+                    break;
+                default:
+                    inputStream = apiConnection.getInputStream();
+                    break;
+            }
+
+            InputStreamReader sr = new InputStreamReader(inputStream);
             BufferedReader br = new BufferedReader(sr);
 
             StringBuilder resultBuilder = new StringBuilder();
 
             String line;
-            while((line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null) {
                 resultBuilder.append(line);
             }
 
