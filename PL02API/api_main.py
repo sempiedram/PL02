@@ -113,25 +113,31 @@ def generate_session_token():
 
 
 def check_user_exists(username):
-    postgresql.execute(psycopg2.sql.SQL('SELECT EXISTS(SELECT 1 FROM users."user" u WHERE u.username = %s) AS EXISTS'),
-                       [username])
-
-    postgresql_connection.commit()
-    # TODO: Rollback on errors!
+    try:
+        query = psycopg2.sql.SQL('SELECT EXISTS(SELECT 1 FROM users."user" u WHERE u.username = %s) AS EXISTS')
+        postgresql.execute(query, [username])
+        postgresql_connection.commit()
+    except psycopg2.errors.InFailedSqlTransaction:
+        postgresql_connection.rollback()
+        return True
 
     return postgresql.fetchone()[0]
 
 
 def get_user_password_hash(username):
-    postgresql.execute(psycopg2.sql.SQL('SELECT u.password_hash FROM users.user u WHERE u.username = %s'), [username])
-    postgresql_connection.commit()
-    result = postgresql.fetchone()
+    try:
+        query = psycopg2.sql.SQL('SELECT u.password_hash FROM users.user u WHERE u.username = %s')
+        postgresql.execute(query, [username])
+        postgresql_connection.commit()
+        result = postgresql.fetchone()
 
-    # TODO: Rollback on errors!
-
-    if result is None:
+        if result is None:
+            return None
+        return result[0]
+    except psycopg2.errors.InFailedSqlTransaction:
+        postgresql_connection.rollback()
         return None
-    return result[0]
+    return None
 
 
 def register_user(username, hashed_password, name, email):
@@ -158,7 +164,7 @@ def curate_prolog_text(text):
 
 
 def prolog_assert(predicate, *args):
-    expanded_arguments = ", ".join(["'{}'".format(argument) for argument in args])
+    expanded_arguments = ", ".join([prolog_format_argument(argument) for argument in args])
     command = "{}({})".format(predicate, expanded_arguments)
     print("prolog_assert: {}".format(command))
     prolog.assertz(command)
@@ -189,28 +195,30 @@ def register_new_recipe(recipe_id, recipe_type, recipe_ingredients, recipe_steps
     recipes_types = prolog_query("recipe_type", recipe_id, "RecipeID")
 
     if len(recipes_types) == 0:
-        prolog_assert("recipe_type", recipe_type)
+        prolog_assert("recipe_type", recipe_id, recipe_type)
 
         for ingredient in recipe_ingredients:
-            prolog_assert("recipe_ingredient", ingredient)
+            prolog_assert("recipe_ingredient", recipe_id, ingredient)
 
         for step in recipe_steps:
-            prolog_assert("recipe_step", step)
+            prolog_assert("recipe_step", recipe_id, step[0], step[1])
 
         for photo in recipe_photos:
-            prolog_assert("recipe_photograph", photo)
+            prolog_assert("recipe_photograph", recipe_id, photo)
     else:
         # Recipe already exists.
         return
 
 
 def check_valid_session_token(session_token):
-    postgresql.execute(psycopg2.sql.SQL(
-        "SELECT * FROM users.check_session_token_sp(session_token_ := %s)"), [session_token])
-    postgresql_connection.commit()
-    # TODO: Rollback on errors!
+    try:
+        postgresql.execute(psycopg2.sql.SQL("SELECT * FROM users.check_session_token_sp(session_token_ := %s)"), [session_token])
+        postgresql_connection.commit()
+        return postgresql.fetchone()[0]
+    except psycopg2.errors.InFailedSqlTransaction:
+        postgresql_connection.rollback()
 
-    return postgresql.fetchone()[0]
+    return False
 
 
 def save_session_token(username, session_token):
@@ -225,10 +233,13 @@ def save_session_token(username, session_token):
 
 
 def logout_session(session_token):
-    postgresql.execute(psycopg2.sql.SQL("CALL users.logout_session_sp(%s)"),
-                       [session_token])
-    postgresql_connection.commit()
-    return True  # TODO: Actually return if the session_token existed.
+    try:
+        postgresql.execute(psycopg2.sql.SQL("CALL users.logout_session_sp(%s)"), [session_token])
+        postgresql_connection.commit()
+    except psycopg2.errors.InFailedSqlTransaction:
+        postgresql_connection.rollback()
+        return False
+    return True
 
 
 def check_password(password, hashed_password):
@@ -303,7 +314,6 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         content_length = int(self.headers["Content-Length"])
         binary_body = self.rfile.read(content_length)
-        body = binary_body.decode(UTF8)
 
         session_token = self.headers["Authorization"]
 
@@ -311,11 +321,11 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         if path_parts[1] == "users":
             if path_parts[2] == "login":
-                handle_login(self, body)
+                handle_login(self, binary_body.decode(UTF8))
                 return
 
             if path_parts[2] == "register":
-                handle_register(self, body)
+                handle_register(self, binary_body.decode(UTF8))
                 return
 
             if path_parts[2] == "logout":
@@ -329,7 +339,7 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         if path_parts[1] == "recipes":
             if path_parts[2] == "new":
-                handle_recipes_new(self, session_token, body)
+                handle_recipes_new(self, session_token, binary_body.decode(UTF8))
                 return
 
         # Handle requests that were not recognized:
@@ -377,6 +387,7 @@ def handle_register(handler, body):
 
 def handle_recipes_new(handler, session_token, body):
     try:
+        print("handle_recipes_new: {}".format(body))
         body_parameters = json.loads(body)
 
         print("handle_recipes_new, body_parameters: {}".format(body_parameters))
@@ -393,6 +404,12 @@ def handle_recipes_new(handler, session_token, body):
         recipe_ingredients = body_parameters["ingredients"]
         recipe_steps = body_parameters["steps"]
         recipe_photos = body_parameters["photos"]
+
+        print("recipe_id: '{}'".format(recipe_id))
+        print("recipe_type: '{}'".format(recipe_type))
+        print("recipe_ingredients: '{}'".format(recipe_ingredients))
+        print("recipe_steps: '{}'".format(recipe_steps))
+        print("recipe_photos: '{}'".format(recipe_photos))
 
         register_new_recipe(recipe_id, recipe_type, recipe_ingredients, recipe_steps, recipe_photos)
 
@@ -428,6 +445,7 @@ def handle_recipes_all(handler):
 
 
 def handle_photos_get(handler, photo_id):
+    print("Getting photo data for photo_id '{}'".format(photo_id))
     photo = photos_get(photo_id)
 
     if photo is None:
@@ -455,6 +473,7 @@ def photos_get(photo_id):
     file_path = "photos/" + photo_id + ".jpg"
     try:
         photo_file = open(file_path, "rb")
+        print("Reading photo from file: '{}'".format(photo_id))
         return photo_file.read()
     except OSError:
         print("photos_get: ERROR: Could not find file '{}'.".format(file_path))
@@ -472,7 +491,9 @@ def handle_recipes_get(handler, recipe_id):
 
 
 def handle_logout(handler, session_token):
-    result = logout_session(session_token)
+    logout_result = logout_session(session_token)
+
+    result = {"logout_result": logout_result}
 
     print("Logout: {}".format(session_token))
 
