@@ -1,5 +1,6 @@
 package com.sempiedram.pl02app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
@@ -115,5 +116,16 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onListFragmentInteraction(RecipePreview recipePreview) {
         System.out.println("Touched recipe preview: " + recipePreview.toString());
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra("recipe_id", recipePreview.recipeID);
+        intent.putExtra("sessionToken", sessionToken);
+        intent.putExtra("username", username);
+        this.startActivity(intent);
+
+//        getSupportFragmentManager()
+//                .beginTransaction()
+//                .replace(R.id.drawer_layout, RecipeDetailFragment.newInstance(), "recipeDetail")
+//                .addToBackStack(null)
+//                .commit();
     }
 }

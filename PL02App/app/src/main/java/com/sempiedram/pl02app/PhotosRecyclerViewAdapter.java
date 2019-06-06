@@ -30,7 +30,14 @@ class PhotosRecyclerViewAdapter extends RecyclerView.Adapter<PhotosRecyclerViewA
                 .inflate(R.layout.photo_item, viewGroup, false);
 
         final ViewHolder viewHolder = new ViewHolder(view);
+
+        return viewHolder;
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int i) {
         viewHolder.bitmap = photosList.get(i);
+
         viewHolder.imageView.setImageBitmap(photosList.get(i));
         viewHolder.positionText.setText(Integer.toString(i));
 
@@ -43,16 +50,11 @@ class PhotosRecyclerViewAdapter extends RecyclerView.Adapter<PhotosRecyclerViewA
             }
         });
 
-        return viewHolder;
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull final ViewHolder holder, int i) {
-        holder.view.setOnClickListener(new View.OnClickListener() {
+        viewHolder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(listener != null) {
-                    listener.itemSelected(holder.bitmap, holder.getAdapterPosition());
+                    listener.itemSelected(viewHolder.bitmap, viewHolder.getAdapterPosition());
                 }
             }
         });

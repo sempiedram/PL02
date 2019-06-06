@@ -52,6 +52,8 @@ public class UploadRecipeFragment extends Fragment {
     private List<String> recipeIngredientsList;
     private List<String> recipeStepsList;
     private List<Bitmap> recipePhotosList;
+    RecyclerView photosListView;
+
 
     private int selectedIngredient = 0;
     private int selectedStep = 0;
@@ -104,6 +106,10 @@ public class UploadRecipeFragment extends Fragment {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getActivity().getContentResolver(), imagePath);
 
                 recipePhotosList.add(bitmap);
+                RecyclerView.Adapter adapter = photosListView.getAdapter();
+                if(adapter != null) {
+                    adapter.notifyDataSetChanged();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -145,11 +151,11 @@ public class UploadRecipeFragment extends Fragment {
         removeIngredient.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!recipeIngredientsList.isEmpty()) {
+                if(!recipeIngredientsList.isEmpty() || selectedIngredient < recipeIngredientsList.size()) {
                     recipeIngredientsList.remove(selectedIngredient);
                     ingredientsListView.getAdapter().notifyDataSetChanged();
                 }else {
-                    removeIngredient.setError("empty list");
+                    removeIngredient.setError("invalid list position");
                 }
             }
         });
@@ -186,11 +192,11 @@ public class UploadRecipeFragment extends Fragment {
         removeStep.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!recipeStepsList.isEmpty()) {
+                if(!recipeStepsList.isEmpty() || selectedStep < recipeStepsList.size()) {
                     recipeStepsList.remove(selectedStep);
                     stepsListView.getAdapter().notifyDataSetChanged();
                 }else {
-                    removeStep.setError("empty list");
+                    removeStep.setError("invalid list position");
                 }
             }
         });
@@ -212,7 +218,7 @@ public class UploadRecipeFragment extends Fragment {
 
 
         // Photos related views
-        final RecyclerView photosListView = view.findViewById(R.id.recipe_photos_list);
+        photosListView = view.findViewById(R.id.recipe_photos_list);
         photosListView.setLayoutManager(new LinearLayoutManager(view.getContext()));
         photosListView.setAdapter(new PhotosRecyclerViewAdapter(recipePhotosList, new PhotosRecyclerViewAdapter.ItemSelectedListener() {
             @Override
@@ -225,11 +231,11 @@ public class UploadRecipeFragment extends Fragment {
         removePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!recipePhotosList.isEmpty()) {
+                if(!recipePhotosList.isEmpty() || selectedPhoto < recipePhotosList.size()) {
                     recipePhotosList.remove(selectedPhoto);
                     photosListView.getAdapter().notifyDataSetChanged();
                 }else {
-                    removePhoto.setError("empty list");
+                    removePhoto.setError("invalid list position");
                 }
             }
         });
@@ -379,12 +385,24 @@ public class UploadRecipeFragment extends Fragment {
                 recipeInfo.put("id", recipeID);
                 recipeInfo.put("type", recipeType);
 
-                JSONArray ingredients = new JSONArray(Arrays.asList(recipeIngredientsList));
-                JSONArray steps = new JSONArray(Arrays.asList(recipeStepsList));
+                List<String> ingredients = new ArrayList<>(recipeIngredientsList);
+                JSONArray jsonIngredients = new JSONArray(ingredients);
 
-                recipeInfo.put("ingredients", ingredients);
-                recipeInfo.put("steps", steps);
-                recipeInfo.put("photos", photos);
+                JSONArray jsonSteps = new JSONArray();
+
+                for(int stepIndex = 0; stepIndex < recipeStepsList.size(); stepIndex++) {
+                    JSONArray step = new JSONArray();
+                    step.put("" + stepIndex);
+                    step.put(recipeStepsList.get(stepIndex));
+
+                    jsonSteps.put(step);
+                }
+
+                JSONArray jsonPhotos = new JSONArray(photos);
+
+                recipeInfo.put("ingredients", jsonIngredients);
+                recipeInfo.put("steps", jsonSteps);
+                recipeInfo.put("photos", jsonPhotos);
             } catch (JSONException e) {
                 e.printStackTrace();
                 return "{\"outcome\":\"error\", \"error\":\"local_json_encoding_error\"," +

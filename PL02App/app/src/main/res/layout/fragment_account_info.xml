@@ -10,7 +10,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/textView2"
+            android:id="@+id/username_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="TextView"
@@ -18,7 +18,7 @@
             tools:layout_editor_absoluteY="16dp" />
 
         <TextView
-            android:id="@+id/textView3"
+            android:id="@+id/email_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="TextView"
@@ -26,7 +26,7 @@
             tools:layout_editor_absoluteY="49dp" />
 
         <TextView
-            android:id="@+id/textView4"
+            android:id="@+id/namee_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="TextView"

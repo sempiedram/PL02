@@ -30,8 +30,8 @@
     <string name="register_password">password</string>
     <string name="register_confirm_password">confirm password</string>
     <string name="register_button">register</string>
-    <string name="recipe_remove_ingredient" >remove ingredient</string>
-    <string name="recipe_add_ingredient" >add ingredient</string>
+    <string name="recipe_remove_ingredient">remove ingredient</string>
+    <string name="recipe_add_ingredient">add ingredient</string>
     <string name="recipe_ingredient">ingredient</string>
     <string name="recipe_step">step</string>
     <string name="recipe_remove_photo">remove photo</string>

@@ -77,9 +77,7 @@ public class LoginFragment extends Fragment {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                Snackbar.make(view, "Username: " + loginUsername.getText().toString() + " - Password: " + loginPassword.getText().toString(), Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-                login(loginUsername.getText().toString(), loginPassword.getText().toString());
+                login(loginUsername.getText().toString().trim(), loginPassword.getText().toString().trim());
                 username = loginUsername.getText().toString();
             }
         });
@@ -130,7 +128,6 @@ public class LoginFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
     }
 
 }

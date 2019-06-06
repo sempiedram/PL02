@@ -104,11 +104,11 @@ public class RegisterFragment extends Fragment {
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                register(registerUsername.getText().toString(),
-                        registerEmail.getText().toString(),
-                        registerName.getText().toString(),
-                        LoginFragment.hashPassword(registerPassword.getText().toString()),
-                        LoginFragment.hashPassword(registerConfirmPassword.getText().toString())
+                register(registerUsername.getText().toString().trim(),
+                        registerEmail.getText().toString().trim(),
+                        registerName.getText().toString().trim(),
+                        LoginFragment.hashPassword(registerPassword.getText().toString().trim()),
+                        LoginFragment.hashPassword(registerConfirmPassword.getText().toString().trim())
                 );
             }
         });

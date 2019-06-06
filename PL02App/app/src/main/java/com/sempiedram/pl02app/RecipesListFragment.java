@@ -130,151 +130,35 @@ public class RecipesListFragment extends Fragment {
             }
         });
 
-        reloadRecipes();
-
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        reloadRecipes();
     }
 
     public void reloadRecipes() {
         // Load all recipes' IDs:
 
-        new LoadRecipePreviewsTask().execute();
-
-//        new APIRequestTask(null, recipesIDsListResponse,
-//                APIRequestTask.HTTPMethod.GET,
-//                sessionToken,
-//                getResources().getString(R.string.api_url) + "/recipes/all",
-//                ""
-//        ).execute();
+        new LoadRecipePreviewsTask(getView().getResources().getString(R.string.api_url)).execute();
     }
 
     class LoadRecipePreviewsTask extends AsyncTask<String, Void, JSONObject> {
+        String apiURL;
 
-        LoadRecipePreviewsTask() {
+        LoadRecipePreviewsTask(String apiURL) {
+            this.apiURL = apiURL;
         }
 
         @Override
         protected void onPreExecute() {}
 
-        private JSONObject loadAllRecipesIDs() {
-            String result = null;
-            try {
-                // Map<String, String> parameters = new HashMap<>();
-                // parameters.put("recipe_id", recipeID);
-
-                // URL recipeInfoURL = new URL(getView().getResources().getString(R.string.api_url) + "/recipes/get?" + URLUtils.composeQueryParameters(parameters));
-
-                URL recipeInfoURL = new URL(getView().getResources().getString(R.string.api_url) + "/recipes/all");
-
-                HttpURLConnection apiConnection = (HttpURLConnection) recipeInfoURL.openConnection();
-                apiConnection.setRequestMethod(APIRequestTask.HTTPMethod.GET.name());
-                apiConnection.setRequestProperty("Authorization", sessionToken);
-
-                InputStreamReader sr = new InputStreamReader(apiConnection.getInputStream());
-                BufferedReader br = new BufferedReader(sr);
-
-                StringBuilder resultBuilder = new StringBuilder();
-
-                String line;
-                while((line = br.readLine()) != null) {
-                    resultBuilder.append(line);
-                }
-
-                result = resultBuilder.toString();
-
-            }catch (MalformedURLException e) {
-                e.printStackTrace();
-            }catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                JSONObject jsonResult = new JSONObject(result);
-                return jsonResult;
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            return null;
-        }
-
-        private JSONObject loadRecipeInfo(String recipeID) {
-            String result = null;
-            try {
-                Map<String, String> parameters = new HashMap<>();
-                parameters.put("recipe_id", recipeID);
-
-                URL recipeInfoURL = new URL(getView().getResources().getString(R.string.api_url) + "/recipes/get?"
-                        + URLUtils.composeQueryParameters(parameters));
-
-                HttpURLConnection apiConnection = (HttpURLConnection) recipeInfoURL.openConnection();
-
-                apiConnection.setRequestMethod(APIRequestTask.HTTPMethod.GET.name());
-                apiConnection.setRequestProperty("Authorization", sessionToken);
-
-                InputStreamReader sr = new InputStreamReader(apiConnection.getInputStream());
-                BufferedReader br = new BufferedReader(sr);
-
-                StringBuilder resultBuilder = new StringBuilder();
-
-                String line;
-                while((line = br.readLine()) != null) {
-                    resultBuilder.append(line);
-                }
-
-                result = resultBuilder.toString();
-
-            }catch (MalformedURLException e) {
-                e.printStackTrace();
-            }catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                if(result == null) {
-                    return null;
-                }
-
-                return new JSONObject(result);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            return null;
-        }
-
-        private Bitmap loadPhoto(String photoID) {
-            try {
-                Map<String, String> parameters = new HashMap<>();
-                parameters.put("photo_id", photoID);
-
-                URL recipeInfoURL = new URL(getView().getResources().getString(R.string.api_url) + "/photos/get?"
-                        + URLUtils.composeQueryParameters(parameters));
-
-                HttpURLConnection apiConnection = (HttpURLConnection) recipeInfoURL.openConnection();
-                apiConnection.setRequestMethod(APIRequestTask.HTTPMethod.GET.name());
-                apiConnection.setRequestProperty("Authorization", sessionToken);
-
-                if(apiConnection.getResponseCode() == 404) {
-                    System.out.println("Could not load photo with id '" + photoID + "'.");
-                    return null;
-                }
-
-                Bitmap bmp = BitmapFactory.decodeStream(apiConnection.getInputStream());
-
-                return bmp;
-            }catch (MalformedURLException e) {
-                e.printStackTrace();
-            }catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return null;
-        }
-
         @Override
         protected JSONObject doInBackground(String[] apiRequest) {
-            JSONObject allRecipesResponse = loadAllRecipesIDs();
+            JSONObject allRecipesResponse = APIRequestTask.loadAllRecipesIDs(sessionToken, apiURL);
 
             if(allRecipesResponse == null) {
                 JSONObject result = new JSONObject();
@@ -295,6 +179,7 @@ public class RecipesListFragment extends Fragment {
 
                 if(recipesIDsOutcome.equals(APIRequestTask.SUCCESS)) {
                     JSONArray recipesIDs = allRecipesResponse.getJSONArray("recipes_ids");
+                    System.out.println("Received response for all recipes ids: " + recipesIDs.toString());
 
                     Set<String> recipesNotLoaded = new HashSet<>();
 
@@ -302,7 +187,7 @@ public class RecipesListFragment extends Fragment {
                     for(int index = 0; index < recipesIDs.length(); index++) {
                         String recipeID = recipesIDs.getString(index);
 
-                        JSONObject recipeInfoResponse = loadRecipeInfo(recipeID);
+                        JSONObject recipeInfoResponse = APIRequestTask.loadRecipeInfo(sessionToken, apiURL, recipeID);
 
                         if(recipeInfoResponse == null) {
                             recipesNotLoaded.add(recipeID);
@@ -315,7 +200,7 @@ public class RecipesListFragment extends Fragment {
 
                             if(recipePhotos.length() > 0) {
                                 String photoID = recipePhotos.getString(0);
-                                recipePhoto = loadPhoto(photoID);
+                                recipePhoto = APIRequestTask.loadPhoto(sessionToken, apiURL, photoID);
                             }
 
                             RecipePreview preview = new RecipePreview(recipeID, recipe.getString("type"), recipePhoto);
