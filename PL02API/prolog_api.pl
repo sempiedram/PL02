@@ -5,6 +5,11 @@
 :- discontiguous recipe_ingredient/2.
 :- discontiguous recipe_photograph/2.
 
+:- dynamic recipe_type/2.
+:- dynamic recipe_ingredient/2.
+:- dynamic recipe_step/3.
+:- dynamic recipe_photograph/2.
+
 %=============================== Test recipes ===============================%
 
 %== Cereal bowl ==%
