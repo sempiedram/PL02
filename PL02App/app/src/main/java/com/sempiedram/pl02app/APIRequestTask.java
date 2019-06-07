@@ -11,6 +11,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -64,6 +65,7 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
         }
     }
 
+
     @Override
     protected String doInBackground(String[] apiRequest) {
 
@@ -100,17 +102,17 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
                     break;
             }
 
-            InputStreamReader sr = new InputStreamReader(inputStream);
-            BufferedReader br = new BufferedReader(sr);
+            byte[] buffer = new byte[2 << 13];
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            while (true) {
+                int bytesRead = inputStream.read(buffer);
+                if (bytesRead == -1) {
+                    break;
+                }
 
-            StringBuilder resultBuilder = new StringBuilder();
-
-            String line;
-            while ((line = br.readLine()) != null) {
-                resultBuilder.append(line);
+                os.write(buffer, 0, bytesRead);
             }
-
-            result = resultBuilder.toString();
+            return os.toString("UTF-8");
         }catch (MalformedURLException e) {
             e.printStackTrace();
         }catch (IOException e) {
@@ -143,20 +145,41 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
             HttpURLConnection apiConnection = (HttpURLConnection) recipeInfoURL.openConnection();
 
             apiConnection.setRequestMethod(APIRequestTask.HTTPMethod.GET.name());
-            apiConnection.setRequestProperty("Authorization", sessionToken);
 
-            InputStreamReader sr = new InputStreamReader(apiConnection.getInputStream());
-            BufferedReader br = new BufferedReader(sr);
+            if(sessionToken != null) {
+                apiConnection.setRequestProperty("Authorization", sessionToken);
+            }
+            apiConnection.setConnectTimeout(5000);
 
-            StringBuilder resultBuilder = new StringBuilder();
+            InputStream inputStream = null;
 
-            String line;
-            while((line = br.readLine()) != null) {
-                resultBuilder.append(line);
+            int responseCode = apiConnection.getResponseCode();
+            System.out.println("Response code: " + responseCode);
+
+            switch(responseCode) {
+                case 400:
+                case 401:
+                case 402:
+                case 404:
+                    inputStream = apiConnection.getErrorStream();
+                    break;
+                default:
+                    inputStream = apiConnection.getInputStream();
+                    break;
             }
 
-            result = resultBuilder.toString();
+            byte[] buffer = new byte[2 << 13];
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            while (true) {
+                int bytesRead = inputStream.read(buffer);
+                if (bytesRead == -1) {
+                    break;
+                }
 
+                os.write(buffer, 0, bytesRead);
+            }
+
+            result = os.toString("UTF-8");
         }catch (MalformedURLException e) {
             e.printStackTrace();
         }catch (IOException e) {
@@ -215,20 +238,40 @@ public class APIRequestTask extends AsyncTask<String, Void, String> {
             URL recipeInfoURL = new URL(apiURL + "/recipes/all?" + URLUtils.composeQueryParameters(parameters));
 
             HttpURLConnection apiConnection = (HttpURLConnection) recipeInfoURL.openConnection();
-            apiConnection.setRequestMethod(APIRequestTask.HTTPMethod.GET.name());
-            apiConnection.setRequestProperty("Authorization", sessionToken);
+            if(sessionToken != null) {
+                apiConnection.setRequestProperty("Authorization", sessionToken);
+            }
+            apiConnection.setConnectTimeout(5000);
 
-            InputStreamReader sr = new InputStreamReader(apiConnection.getInputStream());
-            BufferedReader br = new BufferedReader(sr);
+            InputStream inputStream = null;
 
-            StringBuilder resultBuilder = new StringBuilder();
+            int responseCode = apiConnection.getResponseCode();
+            System.out.println("Response code: " + responseCode);
 
-            String line;
-            while((line = br.readLine()) != null) {
-                resultBuilder.append(line);
+            switch(responseCode) {
+                case 400:
+                case 401:
+                case 402:
+                case 404:
+                    inputStream = apiConnection.getErrorStream();
+                    break;
+                default:
+                    inputStream = apiConnection.getInputStream();
+                    break;
             }
 
-            result = resultBuilder.toString();
+            byte[] buffer = new byte[2 << 13];
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            while (true) {
+                int bytesRead = inputStream.read(buffer);
+                if (bytesRead == -1) {
+                    break;
+                }
+
+                os.write(buffer, 0, bytesRead);
+            }
+
+            result = os.toString("UTF-8");
 
         }catch (MalformedURLException e) {
             e.printStackTrace();
