@@ -258,22 +258,43 @@ def prolog_query(predicate, *args):
 
 
 def register_new_recipe(recipe_id, recipe_type, recipe_ingredients, recipe_steps, recipe_photos):
+    if recipe_id is None:
+        return False
+
+    recipe_id = recipe_id.strip()
+
+    if recipe_id == "":
+        return False
+
+    if recipe_type is None:
+        return False
+
+    recipe_type = recipe_type.strip()
+
+    if recipe_type == "":
+        return False
+
     recipes_types = prolog_query("recipe_type", recipe_id, "RecipeID")
 
     if len(recipes_types) == 0:
-        prolog_assert("recipe_type", recipe_id, recipe_type)
+        try:
+            prolog_assert("recipe_type", recipe_id, recipe_type)
 
-        for ingredient in recipe_ingredients:
-            prolog_assert("recipe_ingredient", recipe_id, ingredient)
+            for ingredient in recipe_ingredients:
+                prolog_assert("recipe_ingredient", recipe_id, ingredient)
 
-        for step in recipe_steps:
-            prolog_assert("recipe_step", recipe_id, step[0], step[1])
+            for step in recipe_steps:
+                prolog_assert("recipe_step", recipe_id, step[0], step[1])
 
-        for photo in recipe_photos:
-            prolog_assert("recipe_photograph", recipe_id, photo)
+            for photo in recipe_photos:
+                prolog_assert("recipe_photograph", recipe_id, photo)
+
+            return True
+        except pyswip.prolog.PrologError:
+            return False
     else:
         # Recipe already exists.
-        return
+        return False
 
 
 def check_valid_session_token(session_token):
@@ -489,9 +510,12 @@ def handle_recipes_new(handler, session_token, body):
         print("recipe_steps: '{}'".format(recipe_steps))
         print("recipe_photos: '{}'".format(recipe_photos))
 
-        register_new_recipe(recipe_id, recipe_type, recipe_ingredients, recipe_steps, recipe_photos)
+        result = register_new_recipe(recipe_id, recipe_type, recipe_ingredients, recipe_steps, recipe_photos)
 
-        send_success_response(handler, "recipe_registered")
+        if result:
+            send_success_response(handler, "recipe_registered")
+        else:
+            send_error_response(handler, 400, "recipe_not_registered", "Could not register the new recipe.")
         return
     except KeyError as e:
         print("handle_recipes_new: KeyError: ERROR: '{}'".format(e))
