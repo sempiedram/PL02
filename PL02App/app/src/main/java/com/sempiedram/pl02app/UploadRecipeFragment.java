@@ -104,6 +104,32 @@ public class UploadRecipeFragment extends Fragment {
             Uri imagePath = data.getData();
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getActivity().getContentResolver(), imagePath);
+                float bitmapWidth = bitmap.getWidth();
+                float bitmapHeight = bitmap.getHeight();
+
+                final int MAX_SIZE = 300;
+
+                if(bitmapWidth > bitmapHeight) {
+                    if(bitmapWidth > MAX_SIZE) {
+                        bitmapHeight = bitmapHeight/bitmapWidth * MAX_SIZE;
+                        bitmapWidth = MAX_SIZE;
+
+                        // Protect against height becoming 0.
+                        if(bitmapHeight < 2) bitmapHeight = 2;
+
+                        bitmap = Bitmap.createScaledBitmap(bitmap, (int) bitmapWidth, (int) bitmapHeight, true);
+                    }
+                }else {
+                    if(bitmapHeight > MAX_SIZE) {
+                        bitmapWidth = bitmapWidth/bitmapHeight * MAX_SIZE;
+                        bitmapHeight = MAX_SIZE;
+
+                        // Protect against width becoming 0.
+                        if(bitmapWidth < 2) bitmapWidth = 2;
+
+                        bitmap = Bitmap.createScaledBitmap(bitmap, (int) bitmapWidth, (int) bitmapHeight, true);
+                    }
+                }
 
                 recipePhotosList.add(bitmap);
                 RecyclerView.Adapter adapter = photosListView.getAdapter();
@@ -163,7 +189,7 @@ public class UploadRecipeFragment extends Fragment {
         addIngredient.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String ingredient = ingredientText.getText().toString();
+                String ingredient = ingredientText.getText().toString().toLowerCase();
 
                 if(isValidText(ingredient)) {
                     recipeIngredientsList.add(ingredient);
@@ -204,7 +230,7 @@ public class UploadRecipeFragment extends Fragment {
         addStep.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String step = stepText.getText().toString();
+                String step = stepText.getText().toString().toLowerCase();
 
                 if(isValidText(step)) {
                     recipeStepsList.add(step);
@@ -307,8 +333,8 @@ public class UploadRecipeFragment extends Fragment {
         String recipeType;
 
         UploadRecipeTask(String recipeID, String recipeType) {
-            this.recipeID = recipeID;
-            this.recipeType = recipeType;
+            this.recipeID = recipeID.toLowerCase();
+            this.recipeType = recipeType.toLowerCase();
         }
 
         @Override
@@ -382,8 +408,8 @@ public class UploadRecipeFragment extends Fragment {
 
             JSONObject recipeInfo = new JSONObject();
             try {
-                recipeInfo.put("id", recipeID);
-                recipeInfo.put("type", recipeType);
+                recipeInfo.put("id", recipeID.toLowerCase());
+                recipeInfo.put("type", recipeType.toLowerCase());
 
                 List<String> ingredients = new ArrayList<>(recipeIngredientsList);
                 JSONArray jsonIngredients = new JSONArray(ingredients);
@@ -393,7 +419,7 @@ public class UploadRecipeFragment extends Fragment {
                 for(int stepIndex = 0; stepIndex < recipeStepsList.size(); stepIndex++) {
                     JSONArray step = new JSONArray();
                     step.put("" + stepIndex);
-                    step.put(recipeStepsList.get(stepIndex));
+                    step.put(recipeStepsList.get(stepIndex).toLowerCase());
 
                     jsonSteps.put(step);
                 }
@@ -455,7 +481,7 @@ public class UploadRecipeFragment extends Fragment {
     }
 
     private void uploadRecipe() {
-        new UploadRecipeTask(recipeIDTextEdit.getText().toString(),
-                             recipeTypeTextEdit.getText().toString()).execute();
+        new UploadRecipeTask(recipeIDTextEdit.getText().toString().toLowerCase(),
+                             recipeTypeTextEdit.getText().toString().toLowerCase()).execute();
     }
 }
