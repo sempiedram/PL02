@@ -36,24 +36,6 @@ def parse_request_path(request_path):
     return path, query
 
 
-def check_filter(filter_specifier, recipe_id):
-    if len(filter_specifier) != 2:
-        return True
-
-    if filter_specifier[0] == "id":
-        if type(recipe_id) == bytes:
-            return recipe_id.decode(UTF8) == filter_specifier[1]
-        return recipe_id == filter_specifier[1]
-
-    if filter_specifier[0] == "ingredient":
-        return len(prolog_query("recipe_ingredient", recipe_id, filter_specifier[1])) != 0
-
-    if filter_specifier[0] == "type":
-        return len(prolog_query("recipe_type", recipe_id, filter_specifier[1])) != 0
-
-    return True
-
-
 def collect_recipes_ids(prolog_result):
     result = []
 
