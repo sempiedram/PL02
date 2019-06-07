@@ -45,4 +45,6 @@
     <string name="photo_item">photo item</string>
     <string name="error_reason">Reason:</string>
     <string name="nav_header_subtitle">Recipes Manager</string>
+    <string name="steps">steps</string>
+    <string name="ingredients">ingredients</string>
 </resources>
