@@ -13,6 +13,7 @@ UTF8 = "utf-8"
 
 prolog = pyswip.Prolog()
 prolog.consult("prolog_api.pl")
+prolog.consult("prolog_api_recipes.pl")
 
 postgresql_connection = psycopg2.connect("dbname=postgres user=postgres password=12345678")
 postgresql = postgresql_connection.cursor()
@@ -219,7 +220,16 @@ def prolog_assert(predicate, *args):
     expanded_arguments = ", ".join([prolog_format_argument(argument) for argument in args])
     command = "{}({})".format(predicate, expanded_arguments)
     print("prolog_assert: {}".format(command))
-    prolog.assertz(command)
+    try:
+        prolog.assertz(command)
+
+        with open("prolog_api_recipes.pl", "a") as recipes_prolog_file:
+            try:
+                recipes_prolog_file.write(command + ".\n")
+            except IOError as e:
+                print("Error writing assertion to disk: {}".format(str(e)))
+    except pyswip.prolog.PrologError as e:
+        print("Error asserting: '{}':  {}".format(command, str(e)))
 
 
 def prolog_format_argument(argument):
