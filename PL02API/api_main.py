@@ -397,6 +397,8 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def write_json(self, to_send):
         to_send = json_encode(to_send).encode(UTF8)
         print("Sending {} bytes.".format(len(to_send)))
+        self.send_header("Content-Length", len(to_send))
+        self.end_headers()
         self.wfile.write(to_send)
 
 
@@ -418,7 +420,7 @@ def handle_register(handler, body):
             send_success_response(handler, "user_registered")
         else:
             # TODO: Actually say what went wrong.
-            send_error_response(handler, 400, "user_already_exists", "Username is already used.")
+            send_error_response(handler, 400, "user_already_exists", "Username is already taken.")
     except KeyError as e:
         print("handle_register: KeyError: ERROR: '{}'".format(e))
         send_error_response(handler, 400, "missing_parameter", str(e))
@@ -498,7 +500,7 @@ def handle_photos_get(handler, photo_id):
 
     handler.send_response(200)
     # handler.send_header("Content-Type", "image/png")
-    # handler.send_header("Content-Length", len(recipe_photo))
+    handler.send_header("Content-Length", len(photo))
     handler.end_headers()
     handler.wfile.write(photo)
 
@@ -591,7 +593,6 @@ def send_error_response(handler, http_code, error_code, error_msg, parameters=No
         parameters = {}
 
     handler.send_response(http_code)
-    handler.end_headers()
 
     # handler.send_header("Content-Type", "application/json")
 
@@ -611,7 +612,6 @@ def send_success_response(handler, success_code, parameters=None):
         parameters = {}
 
     handler.send_response(200)
-    handler.end_headers()
 
     # handler.send_header("Content-Type", "application/json")
 
