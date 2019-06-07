@@ -54,25 +54,58 @@ def check_filter(filter_specifier, recipe_id):
     return True
 
 
+def collect_recipes_ids(prolog_result):
+    result = []
+
+    for item in prolog_result:
+        try:
+            recipe_id = item["RecipeID"]
+            result.append(recipe_id)
+        except KeyError:
+            print('Warning: used collect_recipes_ids on a result set that has '
+                  'no RecipeID key for some items: {}'.format(prolog_result))
+
+    return result
+
+
 def recipes_all(filter_string):
     """
     Returns the ids of all recipes.
     :return: A list with all the ids.
     """
-    print("recipes_all: filter: {}".format(filter_string))
 
-    filter_specifiers = [x.strip() for x in filter_string.split(",")]
-    filters = [f.split(":") for f in filter_specifiers]
+    print("recipes_all({})".format(filter_string))
 
-    all_ids = list(prolog.query("all_recipes(RecipesIDs)"))[0]["RecipesIDs"]
-    print("All ids before filters: {}".format(all_ids))
+    if filter_string is not None:
+        filter_string = filter_string.strip()
 
-    for filter_specifier in filters:
-        if len(filter_specifier) == 2:
-            all_ids = list(filter(lambda recipe_id: check_filter(filter_specifier, recipe_id), all_ids))
+        if len(filter_string) != 0:
+            filter_parts = filter_string.split("=", 1)
 
-    print("All ids after filters ({}): {}".format(filter_string, all_ids))
+            if len(filter_parts) >= 2:
+                filter_name = filter_parts[0]
+                filter_value = filter_parts[1]
 
+                if len(filter_name) > 0 and len(filter_value) > 0:
+                    if filter_name == "ingredient":
+                        filtered_recipes_result = prolog_query("recipe_filtered_ingredient", "RecipeID", filter_value.lower())
+                        filtered_recipes = collect_recipes_ids(filtered_recipes_result)
+                        return filtered_recipes
+
+                    if filter_name == "type":
+                        filtered_recipes_result = prolog_query("recipe_filtered_type", "RecipeID", filter_value.lower())
+                        filtered_recipes = collect_recipes_ids(filtered_recipes_result)
+                        return filtered_recipes
+
+                    if filter_name == "id":
+                        filtered_recipes_result = prolog_query("recipe_filtered_id", "RecipeID", filter_value.lower())
+                        filtered_recipes = collect_recipes_ids(filtered_recipes_result)
+                        return filtered_recipes
+
+                print("ERROR filtering recipes: Unrecognized filter: {}. Continuing without filter.".format(filter_string))
+
+    all_ids = unbytefy(list(prolog.query("all_recipes(RecipesIDs)"))[0]["RecipesIDs"])
+    print("All ids found without using filters: {}".format(all_ids))
     return all_ids
 
 
@@ -94,11 +127,15 @@ def get_first_value_from_dict(dict_):
 
 
 def recipe_info(recipe_id):
-    prolog_result = next(prolog.query("recipe_info(\"{}\", RecipeInfo)".format(curate_prolog_text(recipe_id))))
+    prolog_result = list(prolog.query("recipe_info(\"{}\", RecipeInfo)".format(curate_prolog_text(recipe_id))))
+
+    if prolog_result is None or len(prolog_result) == 0:
+        return None
+
+    prolog_result = prolog_result[0]
+
     print("PROLOG RESULT : {}".format(prolog_result))
     # TODO: What happens when the recipe doesn't exist.
-
-    # recipe_type = next(prolog.query("recipe_type(\"{}\", RecipeType)".format(curate_prolog_text(recipe_id))))
 
     recipe_type = prolog_query("recipe_type", recipe_id, "RecipeType")
     if len(recipe_type) < 1:
@@ -167,7 +204,6 @@ def get_user_password_hash(username):
         return result[0]
     except psycopg2.errors.InFailedSqlTransaction:
         postgresql_connection.rollback()
-        return None
     return None
 
 
@@ -213,19 +249,33 @@ def prolog_format_argument(argument):
     return '"{}"'.format(argument)
 
 
+def unbytefy(prolog_result):
+    if type(prolog_result) == list:
+        return [unbytefy(item) for item in prolog_result]
+
+    if type(prolog_result) == dict:
+        result = {}
+        # Unbytefy each value:
+        for key in prolog_result.keys():
+            result[key] = unbytefy(prolog_result[key])
+
+        return result
+
+    if type(prolog_result) == bytes:
+        return prolog_result.decode("utf-8")
+
+    return prolog_result
+
+
 def prolog_query(predicate, *args):
     expanded_arguments = ", ".join([prolog_format_argument(argument) for argument in args])
     command = "{}({})".format(predicate, expanded_arguments)
-    result = list(prolog.query(command))
+    result = unbytefy(list(prolog.query(command)))
     print("prolog_query: \"\"\"{}\"\"\", result: {}".format(command, result))
     return result
 
 
 def register_new_recipe(recipe_id, recipe_type, recipe_ingredients, recipe_steps, recipe_photos):
-    # result = next(prolog.query("recipe_info(\"{}\", RecipeInfo)".format(curate_prolog_text(recipe_id))))
-    # return json_encode(result.decode(UTF8))
-
-    # recipes_types = list(prolog.query("recipe_type(\"{}\", RecipeID)".format(curate_prolog_text(recipe_id))))
     recipes_types = prolog_query("recipe_type", recipe_id, "RecipeID")
 
     if len(recipes_types) == 0:
@@ -530,6 +580,10 @@ def handle_recipes_get(handler, recipe_id):
     print("handle_recipes_get, recipe_id: {}".format(recipe_id))
 
     recipe = recipe_info(recipe_id)
+    if recipe is None:
+        send_error_response(handler, 400, "recipe_not_found", "Could not find the given recipe")
+        return
+
     result = {"recipe": recipe}
 
     # handler.send_header("Content-Type", "application/json")

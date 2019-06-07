@@ -5,7 +5,7 @@
 :- discontiguous recipe_ingredient/2.
 :- discontiguous recipe_photograph/2.
 
-%=============================== Specific recipes ===============================%
+%=============================== Test recipes ===============================%
 
 %== Cereal bowl ==%
     recipe_type("cereal_bowl", "quick").
@@ -68,3 +68,17 @@ recipe_info(RecipeID, [RecipeType, RecipeIngredients, RecipeSteps, RecipePhotogr
 
 all_recipes(RecipesIDs) :-
 	findall(RecipeID, recipe_type(RecipeID, _), RecipesIDs).
+
+
+%=============================== Filtering rules ===============================%
+
+recipe_filtered_type(RecipeID, Type) :-
+	recipe_type(RecipeID, Type).
+	
+recipe_filtered_id(RecipeID, RecipeIDFilter) :-
+	recipe_type(RecipeID, _),
+	RecipeID = RecipeIDFilter.
+
+recipe_filtered_ingredient(RecipeID, RecipeIngredient) :-
+	recipe_type(RecipeID, _),
+	recipe_ingredient(RecipeID, RecipeIngredient).
