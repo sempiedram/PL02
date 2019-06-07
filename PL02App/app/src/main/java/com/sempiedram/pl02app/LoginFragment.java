@@ -18,6 +18,9 @@ import android.widget.ProgressBar;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -33,6 +36,7 @@ public class LoginFragment extends Fragment {
     String username; //TODO: Move to LiveData
 
     private void login(String username, String password) {
+        System.out.println("Logging in with: " + username + ", " + password + ".");
         try {
             JSONObject body = new JSONObject();
             body.put("username", username);
@@ -51,16 +55,21 @@ public class LoginFragment extends Fragment {
     }
 
     public static String hashPassword(String password) {
-        MessageDigest digest;
+        final int POSITIVE = 1;
 
         try {
-            digest = MessageDigest.getInstance("SHA-256");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.reset();
+            md.update(password.getBytes("UTF-8"));
+            String hexadecimalHash = new BigInteger(POSITIVE, md.digest()).toString(16);
+            return hexadecimalHash.toLowerCase();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return password;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
         }
 
-        return new String(digest.digest(password.getBytes()));
+        return password;
     }
 
     @Override
