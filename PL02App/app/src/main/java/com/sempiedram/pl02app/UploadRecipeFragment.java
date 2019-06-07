@@ -104,6 +104,8 @@ public class UploadRecipeFragment extends Fragment {
             Uri imagePath = data.getData();
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getActivity().getContentResolver(), imagePath);
+                if(bitmap == null) return;
+                
                 float bitmapWidth = bitmap.getWidth();
                 float bitmapHeight = bitmap.getHeight();
 
